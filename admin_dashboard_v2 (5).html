@@ -1,0 +1,623 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>BW 다이어리 — 관리자</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Pretendard:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<style>
+:root {
+  --bg: #F0EDE8;
+  --surface: #FAFAF8;
+  --surface2: #FFFFFF;
+  --text: #1C1A17;
+  --text-muted: #6B6860;
+  --text-hint: #AEABA4;
+  --border: #E2DDD6;
+  --accent: #2B4C3F;
+  --accent2: #C8563A;
+  --accent-light: #E8F0ED;
+  --radius: 12px;
+  --radius-sm: 8px;
+  --sidebar: 220px;
+}
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body { font-family: 'Pretendard', -apple-system, sans-serif; background: var(--bg); color: var(--text); font-size: 14px; }
+
+/* LAYOUT */
+.layout { display: flex; min-height: 100vh; }
+.sidebar {
+  width: var(--sidebar); background: var(--surface); border-right: 1px solid var(--border);
+  display: flex; flex-direction: column; position: fixed; top: 0; left: 0; height: 100vh; z-index: 10;
+}
+.main { margin-left: var(--sidebar); flex: 1; padding: 32px 36px; min-width: 0; }
+
+/* SIDEBAR */
+.sidebar-top { padding: 24px 20px 16px; border-bottom: 1px solid var(--border); }
+.sidebar-logo { font-size: 15px; font-weight: 800; color: var(--accent); letter-spacing: -0.02em; }
+.sidebar-sub { font-size: 11px; color: var(--text-hint); margin-top: 3px; }
+.sidebar-nav { padding: 12px 10px; flex: 1; }
+.nav-item {
+  width: 100%; padding: 9px 12px; border-radius: var(--radius-sm);
+  border: none; background: none; cursor: pointer; text-align: left;
+  font-size: 13px; font-weight: 500; color: var(--text-muted);
+  display: flex; align-items: center; gap: 10px; transition: all 0.15s;
+  font-family: 'Pretendard', sans-serif; margin-bottom: 2px;
+}
+.nav-item:hover { background: var(--bg); color: var(--text); }
+.nav-item.active { background: var(--accent-light); color: var(--accent); font-weight: 700; }
+.nav-icon { font-size: 15px; width: 18px; text-align: center; }
+.sidebar-bottom { padding: 16px 20px; border-top: 1px solid var(--border); }
+.sync-btn {
+  width: 100%; padding: 9px; border-radius: var(--radius-sm);
+  border: 1.5px solid var(--accent); background: transparent;
+  color: var(--accent); font-size: 13px; font-weight: 700;
+  cursor: pointer; font-family: 'Pretendard', sans-serif;
+  display: flex; align-items: center; justify-content: center; gap: 6px;
+  transition: all 0.15s;
+}
+.sync-btn:hover { background: var(--accent); color: white; }
+.sync-status { font-size: 11px; color: var(--text-hint); text-align: center; margin-top: 8px; }
+
+/* PAGES */
+.page { display: none; }
+.page.active { display: block; }
+
+/* PAGE HEADER */
+.page-header { margin-bottom: 28px; }
+.page-title { font-size: 22px; font-weight: 800; letter-spacing: -0.03em; }
+.page-desc { font-size: 13px; color: var(--text-muted); margin-top: 4px; }
+
+/* STAT CARDS */
+.stats-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 14px; margin-bottom: 28px; }
+.stat-card { background: var(--surface2); border-radius: var(--radius); border: 1px solid var(--border); padding: 18px 20px; }
+.stat-label { font-size: 11px; font-weight: 600; letter-spacing: 0.06em; text-transform: uppercase; color: var(--text-hint); margin-bottom: 10px; }
+.stat-num { font-size: 28px; font-weight: 800; letter-spacing: -0.03em; }
+.stat-sub { font-size: 12px; color: var(--text-hint); margin-top: 4px; }
+.stat-card.accent { background: var(--accent); border-color: var(--accent); }
+.stat-card.accent .stat-label, .stat-card.accent .stat-num, .stat-card.accent .stat-sub { color: white; }
+.stat-card.accent .stat-label { opacity: 0.7; }
+.stat-card.accent .stat-sub { opacity: 0.6; }
+
+/* CHARTS GRID */
+.charts-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 16px; margin-bottom: 28px; }
+.chart-card { background: var(--surface2); border-radius: var(--radius); border: 1px solid var(--border); padding: 20px 22px; }
+.chart-card.wide { grid-column: span 2; }
+.chart-title { font-size: 13px; font-weight: 700; margin-bottom: 16px; color: var(--text); }
+
+/* BAR CHART */
+.bar-list { display: flex; flex-direction: column; gap: 10px; }
+.bar-row { display: flex; align-items: center; gap: 10px; }
+.bar-label { font-size: 12px; color: var(--text-muted); width: 110px; flex-shrink: 0; text-align: right; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.bar-track { flex: 1; height: 24px; background: var(--bg); border-radius: 4px; overflow: hidden; }
+.bar-fill { height: 100%; background: var(--accent); border-radius: 4px; transition: width 1s cubic-bezier(0.4,0,0.2,1); min-width: 0; display: flex; align-items: center; }
+.bar-fill.accent2 { background: var(--accent2); }
+.bar-val { font-size: 11px; font-weight: 700; color: white; padding-left: 8px; white-space: nowrap; }
+
+/* DONUT */
+.donut-wrap { display: flex; align-items: center; gap: 20px; }
+.donut-svg { flex-shrink: 0; }
+.donut-legend { display: flex; flex-direction: column; gap: 8px; }
+.legend-item { display: flex; align-items: center; gap: 8px; font-size: 12px; }
+.legend-dot { width: 10px; height: 10px; border-radius: 50%; flex-shrink: 0; }
+
+/* RESPONDENT TABLE */
+.resp-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(180px, 1fr)); gap: 12px; margin-bottom: 28px; }
+.resp-card { background: var(--surface2); border-radius: var(--radius); border: 1px solid var(--border); padding: 16px 18px; }
+.resp-name { font-size: 15px; font-weight: 700; margin-bottom: 8px; }
+.resp-count { font-size: 26px; font-weight: 800; color: var(--accent); letter-spacing: -0.03em; }
+.resp-count span { font-size: 13px; font-weight: 500; color: var(--text-muted); margin-left: 4px; }
+.resp-last { font-size: 11px; color: var(--text-hint); margin-top: 6px; }
+.resp-bar { height: 4px; background: var(--bg); border-radius: 99px; margin-top: 10px; overflow: hidden; }
+.resp-bar-fill { height: 100%; background: var(--accent); border-radius: 99px; }
+
+/* FILTER BAR */
+.filter-bar { display: flex; gap: 8px; align-items: center; margin-bottom: 16px; flex-wrap: wrap; }
+.filter-chip {
+  padding: 6px 14px; border-radius: 99px; border: 1.5px solid var(--border);
+  font-size: 12px; font-weight: 600; cursor: pointer; background: var(--surface2);
+  color: var(--text-muted); transition: all 0.15s; font-family: 'Pretendard', sans-serif;
+}
+.filter-chip.on { background: var(--accent); color: white; border-color: var(--accent); }
+.spacer { flex: 1; }
+.search-box {
+  padding: 7px 14px; border-radius: var(--radius-sm); border: 1.5px solid var(--border);
+  font-size: 13px; font-family: 'Pretendard', sans-serif; background: var(--surface2);
+  outline: none; width: 220px; color: var(--text);
+}
+.search-box:focus { border-color: var(--accent); }
+.export-btn {
+  padding: 7px 14px; border-radius: var(--radius-sm); border: 1.5px solid var(--border);
+  background: var(--surface2); font-size: 12px; font-weight: 700;
+  font-family: 'Pretendard', sans-serif; cursor: pointer; color: var(--text);
+  display: flex; align-items: center; gap: 6px;
+}
+.export-btn:hover { background: var(--bg); }
+
+/* TABLE */
+.table-wrap { background: var(--surface2); border-radius: var(--radius); border: 1px solid var(--border); overflow: hidden; overflow-x: auto; }
+table { width: 100%; border-collapse: collapse; font-size: 13px; min-width: 900px; }
+thead { background: var(--bg); }
+th { padding: 11px 14px; text-align: left; font-size: 11px; font-weight: 700; letter-spacing: 0.05em; text-transform: uppercase; color: var(--text-muted); border-bottom: 1px solid var(--border); white-space: nowrap; }
+td { padding: 13px 14px; border-bottom: 1px solid var(--border); vertical-align: top; }
+tr:last-child td { border-bottom: none; }
+tr:hover td { background: var(--bg); }
+.badge { display: inline-block; padding: 3px 10px; border-radius: 99px; font-size: 11px; font-weight: 700; white-space: nowrap; }
+.badge-yes { background: var(--accent-light); color: var(--accent); }
+.badge-no { background: #FFF0ED; color: #C0452B; }
+.badge-photo { background: #EEF2FF; color: #3730A3; }
+.td-memo { max-width: 180px; font-size: 12px; color: var(--text-muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.td-usage { max-width: 160px; font-size: 11px; color: var(--text-muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+
+/* PHOTO GALLERY */
+.gallery-filter { margin-bottom: 16px; }
+.photo-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 14px; }
+.photo-item { background: var(--surface2); border-radius: var(--radius); border: 1px solid var(--border); overflow: hidden; cursor: pointer; transition: transform 0.15s; }
+.photo-item:hover { transform: scale(1.02); }
+.photo-thumb { width: 100%; height: 160px; object-fit: cover; display: block; background: var(--bg); }
+.photo-thumb-placeholder { width: 100%; height: 160px; background: var(--bg); display: flex; align-items: center; justify-content: center; font-size: 32px; }
+.photo-info { padding: 10px 12px; }
+.photo-name { font-size: 13px; font-weight: 700; }
+.photo-meta { font-size: 11px; color: var(--text-hint); margin-top: 3px; }
+
+/* LIGHTBOX */
+.lightbox { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.85); z-index: 100; align-items: center; justify-content: center; }
+.lightbox.show { display: flex; }
+.lightbox-img { max-width: 80vw; max-height: 80vh; border-radius: var(--radius); object-fit: contain; }
+.lightbox-close { position: absolute; top: 20px; right: 24px; background: none; border: none; color: white; font-size: 28px; cursor: pointer; }
+.lightbox-info { position: absolute; bottom: 28px; left: 50%; transform: translateX(-50%); background: rgba(0,0,0,0.6); color: white; padding: 10px 20px; border-radius: 99px; font-size: 13px; text-align: center; }
+
+/* SETUP */
+.setup-list { display: flex; flex-direction: column; gap: 16px; }
+.setup-card { background: var(--surface2); border-radius: var(--radius); border: 1px solid var(--border); padding: 20px 24px; display: flex; gap: 18px; }
+.setup-num { width: 32px; height: 32px; border-radius: 50%; background: var(--accent); color: white; font-size: 14px; font-weight: 800; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
+.setup-content h3 { font-size: 14px; font-weight: 700; margin-bottom: 8px; }
+.setup-content p { font-size: 13px; color: var(--text-muted); line-height: 1.7; }
+.setup-content code { background: var(--bg); padding: 2px 7px; border-radius: 4px; font-family: monospace; font-size: 12px; color: var(--accent); }
+.cfg-inputs { display: flex; flex-direction: column; gap: 10px; margin-top: 14px; }
+.cfg-row { display: flex; gap: 12px; align-items: center; }
+.cfg-row label { font-size: 12px; font-weight: 700; color: var(--text-muted); width: 120px; flex-shrink: 0; }
+.cfg-row input { flex: 1; padding: 9px 12px; border: 1.5px solid var(--border); border-radius: var(--radius-sm); font-size: 13px; font-family: 'Pretendard', sans-serif; background: var(--bg); color: var(--text); outline: none; }
+.cfg-row input:focus { border-color: var(--accent); }
+.btn-save { margin-top: 12px; padding: 10px 20px; background: var(--accent); color: white; border: none; border-radius: var(--radius-sm); font-size: 13px; font-family: 'Pretendard', sans-serif; font-weight: 700; cursor: pointer; }
+
+/* EMPTY */
+.empty { text-align: center; padding: 60px 20px; color: var(--text-hint); font-size: 14px; }
+
+/* LOADING */
+.loading-bar { height: 3px; background: var(--accent); position: fixed; top: 0; left: 0; width: 0; transition: width 0.4s; z-index: 200; }
+</style>
+</head>
+<body>
+<div class="loading-bar" id="loading-bar"></div>
+
+<div class="layout">
+  <!-- SIDEBAR -->
+  <div class="sidebar">
+    <div class="sidebar-top">
+      <div class="sidebar-logo">🥤 BW 다이어리</div>
+      <div class="sidebar-sub">관리자 대시보드</div>
+    </div>
+    <div class="sidebar-nav">
+      <button class="nav-item active" onclick="showPage('overview',this)"><span class="nav-icon">📊</span> 전체 현황</button>
+      <button class="nav-item" onclick="showPage('responses',this)"><span class="nav-icon">📋</span> 응답 목록</button>
+      <button class="nav-item" onclick="showPage('charts',this)"><span class="nav-icon">📈</span> 분석 차트</button>
+      <button class="nav-item" onclick="showPage('respondents',this)"><span class="nav-icon">👥</span> 응답자 현황</button>
+      <button class="nav-item" onclick="showPage('gallery',this)"><span class="nav-icon">🖼</span> 사진 갤러리</button>
+      <button class="nav-item" onclick="showPage('setup',this)"><span class="nav-icon">⚙️</span> 연동 설정</button>
+    </div>
+    <div class="sidebar-bottom">
+      <button class="sync-btn" onclick="loadData()">↺ 데이터 새로고침</button>
+      <div class="sync-status" id="sync-status">마지막 업데이트: —</div>
+    </div>
+  </div>
+
+  <div class="main">
+
+    <!-- OVERVIEW -->
+    <div class="page active" id="page-overview">
+      <div class="page-header">
+        <div class="page-title">전체 현황</div>
+        <div class="page-desc">음료 다이어리 응답 실시간 현황이에요</div>
+      </div>
+      <div id="cfg-alert" style="display:none;background:#FFF8ED;border:1.5px solid #F0C070;border-radius:var(--radius);padding:14px 18px;margin-bottom:20px;font-size:13px;color:#7A5A10;display:flex;align-items:center;justify-content:space-between;gap:12px;">
+        <span>⚠️ Google Sheets 연동이 설정되지 않았어요. 지금은 샘플 데이터가 표시됩니다.</span>
+        <button onclick="showPage('setup',null)" style="padding:6px 14px;border-radius:6px;border:1.5px solid #C8963A;background:transparent;font-size:12px;font-weight:700;cursor:pointer;color:#7A5A10;font-family:'Pretendard',sans-serif;">설정하기</button>
+      </div>
+      <div class="stats-grid">
+        <div class="stat-card accent"><div class="stat-label">총 기록 수</div><div class="stat-num" id="ov-total">0</div><div class="stat-sub">전체 음료 이벤트</div></div>
+        <div class="stat-card"><div class="stat-label">참여 인원</div><div class="stat-num" id="ov-people">0</div><div class="stat-sub">명</div></div>
+        <div class="stat-card"><div class="stat-label">메모 작성률</div><div class="stat-num" id="ov-tumbler">0%</div><div class="stat-sub">전체 기록 중</div></div>
+        <div class="stat-card"><div class="stat-label">사진 첨부율</div><div class="stat-num" id="ov-photo">0%</div><div class="stat-sub">전체 기록 중</div></div>
+      </div>
+      <div class="charts-grid">
+        <div class="chart-card"><div class="chart-title">음료 종류 TOP 5</div><div id="ov-chart-usage"></div></div>
+        <div class="chart-card"><div class="chart-title">음료 종류 TOP 5</div><div id="ov-chart-drinks"></div></div>
+        <div class="chart-card"><div class="chart-title">장소별 분포</div><div id="ov-chart-places"></div></div>
+        <div class="chart-card"><div class="chart-title">시간대별 분포</div><div id="ov-chart-times"></div></div>
+      </div>
+    </div>
+
+    <!-- RESPONSES -->
+    <div class="page" id="page-responses">
+      <div class="page-header">
+        <div class="page-title">응답 목록</div>
+        <div class="page-desc">모든 음료 기록을 확인하고 필터링하세요</div>
+      </div>
+      <div class="filter-bar">
+        <div class="filter-chip on" onclick="filterRes(this,'all')">전체</div>
+        <div class="filter-chip" onclick="filterRes(this,'tumbler')">텀블러 사용</div>
+        <div class="filter-chip" onclick="filterRes(this,'no-tumbler')">미사용</div>
+        <div class="filter-chip" onclick="filterRes(this,'photo')">사진 있음</div>
+        <div class="spacer"></div>
+        <input class="search-box" type="text" placeholder="🔍 이름, 음료, 메모 검색..." id="search-input" oninput="renderTable()">
+        <button class="export-btn" onclick="exportCSV()">⬇ CSV</button>
+      </div>
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr>
+              <th>시간</th><th>이름</th><th>음료</th><th>온도</th>
+              <th>장소</th><th>상황</th><th>시간대</th><th>동반</th><th>만족도</th>
+              <th>메모</th><th>사진</th>
+            </tr>
+          </thead>
+          <tbody id="res-tbody"></tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- CHARTS -->
+    <div class="page" id="page-charts">
+      <div class="page-header">
+        <div class="page-title">분석 차트</div>
+        <div class="page-desc">텀블러 사용 행태를 분석해보세요</div>
+      </div>
+      <div class="charts-grid">
+        <div class="chart-card"><div class="chart-title">음료 종류 분포</div><div id="ch-drinks"></div></div>
+        <div class="chart-card"><div class="chart-title">장소별 분포</div><div id="ch-places"></div></div>
+        <div class="chart-card"><div class="chart-title">시간대별 분포</div><div id="ch-times"></div></div>
+        <div class="chart-card"><div class="chart-title">상황별 분포</div><div id="ch-situations"></div></div>
+        <div class="chart-card"><div class="chart-title">동반 여부</div><div id="ch-company"></div></div>
+        <div class="chart-card"><div class="chart-title">만족도 분포</div><div id="ch-rating"></div></div>
+      </div>
+    </div>
+
+    <!-- RESPONDENTS -->
+    <div class="page" id="page-respondents">
+      <div class="page-header">
+        <div class="page-title">응답자 현황</div>
+        <div class="page-desc">참여자별 응답 현황을 확인하세요</div>
+      </div>
+      <div class="resp-grid" id="resp-grid"></div>
+      <div class="chart-card" style="margin-top:8px;">
+        <div class="chart-title">응답자별 기록 수</div>
+        <div id="ch-respondents"></div>
+      </div>
+    </div>
+
+    <!-- GALLERY -->
+    <div class="page" id="page-gallery">
+      <div class="page-header">
+        <div class="page-title">사진 갤러리</div>
+        <div class="page-desc">응답자가 첨부한 사진을 모아볼 수 있어요</div>
+      </div>
+      <div class="filter-bar gallery-filter">
+        <div class="filter-chip on" onclick="filterGallery(this,'all')">전체</div>
+        <div id="gallery-person-filters"></div>
+      </div>
+      <div class="photo-grid" id="photo-grid"></div>
+    </div>
+
+    <!-- SETUP -->
+    <div class="page" id="page-setup">
+      <div class="page-header">
+        <div class="page-title">연동 설정</div>
+        <div class="page-desc">Google Sheets에서 응답 데이터를 불러오세요</div>
+      </div>
+      <div class="setup-list">
+        <div class="setup-card">
+          <div class="setup-num">1</div>
+          <div class="setup-content">
+            <h3>Sheet ID 확인</h3>
+            <p>Google Sheets URL에서 Sheet ID를 복사하세요.<br>
+            <code>docs.google.com/spreadsheets/d/<b>여기가 ID</b>/edit</code></p>
+          </div>
+        </div>
+        <div class="setup-card">
+          <div class="setup-num">2</div>
+          <div class="setup-content">
+            <h3>API Key 확인</h3>
+            <p>Google Cloud Console → 사용자 인증 정보에서 API Key를 복사하세요.<br>Sheets API가 활성화되어 있어야 합니다.</p>
+          </div>
+        </div>
+        <div class="setup-card">
+          <div class="setup-num">3</div>
+          <div class="setup-content">
+            <h3>아래에 입력</h3>
+            <div class="cfg-inputs">
+              <div class="cfg-row"><label>Sheet ID</label><input type="text" id="cfg-sheet-id" placeholder="1PH2fQqHs..."></div>
+              <div class="cfg-row"><label>API Key</label><input type="text" id="cfg-api-key" placeholder="AIzaSy..."></div>
+              <div class="cfg-row"><label>시트 탭 이름</label><input type="text" id="cfg-sheet-name" value="응답"></div>
+            </div>
+            <button class="btn-save" onclick="saveConfig()">저장 및 데이터 불러오기</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<!-- LIGHTBOX -->
+<div class="lightbox" id="lightbox" onclick="closeLightbox()">
+  <button class="lightbox-close" onclick="closeLightbox()">✕</button>
+  <img class="lightbox-img" id="lightbox-img" src="" alt="">
+  <div class="lightbox-info" id="lightbox-info"></div>
+</div>
+
+<script>
+// ========================
+// CONFIG
+// ========================
+let CFG = {
+  SHEET_ID: localStorage.getItem('bw_sheet_id') || '',
+  API_KEY: localStorage.getItem('bw_api_key') || '',
+  SHEET_NAME: localStorage.getItem('bw_sheet_name') || '응답',
+};
+
+// 열 인덱스 (시간, 이름, 음료, 온도, 장소, 상황, 시간대, 동반, 만족도, 메모, 사진)
+const COL = {
+  TIME:0, NAME:1, DRINK:2, TEMP:3,
+  PLACE:4, SITUATION:5, TIMEOFDAY:6, COMPANY:7, RATING:8,
+  MEMO:9, PHOTO:10
+};
+
+const SAMPLE = [
+  ['2025.01.15 09:12','김지혜','아이스 아메리카노 | 스타벅스 아아','🧊 차가운','텀블러(보온·보냉)','뚜껑 닫고 마심','스탠리 40oz','','🚶 이동 중 (도보)','출퇴근 이동','🌞 오전 9–12시','혼자','좋음','뚜껑 사용이 편했어요','그립감이 편했어요','입에 닿는 감촉이 좋았어요','빨대를 사용하지 않았어요','온도가 잘 유지됐어요','세척하기 어렵지 않았어요','휴대하기 편했어요','맛과 향이 좋았어요','딱 좋았어요','매일 출근길에 집에서 담아 나와요','https://drive.google.com/1'],
+  ['2025.01.15 10:34','이민준','라떼류','🌡 따뜻한','테이크아웃컵(종이/플라스틱)','','','씻기 귀찮아서, 매장/카페 분위기상','☕ 카페','업무/공부','🌞 오전 9–12시','혼자','보통','','','','','','','','','','카페에서 먹을 땐 그냥 테이크아웃으로',''],
+  ['2025.01.15 13:55','김지혜','생수','상온','페트병','','','탄산이라 김 빠질 것 같아서','💼 사무실','업무/공부','🍱 점심 12–14시','동료/친구와','보통','','','','','','','','','','탄산수는 텀블러에 넣으면 김 빠질 것 같아서 안 씀',''],
+  ['2025.01.15 17:20','박서연','스무디/쉐이크 | 단백질 쉐이크','🧊 차가운','물병/보틀','빨대 사용, 뚜껑 닫고 마심','나이키 물병','','🏋 운동 공간','운동 전·중·후','☀ 오후 14–18시','혼자','최고','한 손으로 열기 어려워요','그립감이 편했어요','빨대로 마시기 편했어요','빨대로 마시기 편했어요','온도가 잘 유지됐어요','세척하기 어렵지 않았어요','휴대하기 편했어요','맛과 향이 좋았어요','딱 좋았어요','운동 중엔 빨대 필수!','https://drive.google.com/2'],
+  ['2025.01.15 15:08','이민준','핫 아메리카노','🌡 따뜻한','텀블러(보온·보냉)','뚜껑 닫고 마심','스타벅스 SS 텀블러','','🚗 차 안 (운전)','드라이브','☀ 오후 14–18시','혼자','좋음','뚜껑 열고 닫기 불편해요, 한 손으로 열기 어려워요','잡기에 너무 두꺼워요','금속이라 차갑고 딱딱해요','빨대를 사용하지 않았어요','온도가 잘 유지됐어요','뚜껑·패킹 분리 세척이 귀찮아요','컵홀더에 안 들어가요','맛과 향이 좋았어요','딱 좋았어요','운전 중에 뚜껑 열기가 너무 불편했어요','https://drive.google.com/3'],
+  ['2025.01.15 19:45','박서연','차/허브티','🌡 따뜻한','머그컵','','','집이라 굳이 텀블러 안 씀','🏠 집','휴식·카페타임','🌆 저녁 18–22시','혼자','좋음','','','','','','','','','','집에서 쉴 땐 머그컵이 편해요',''],
+  ['2025.01.16 08:02','김지혜','아이스 아메리카노','🧊 차가운','텀블러(보온·보냉)','빨대 사용','직구 덮개형 텀블러','','🚇 대중교통','출퇴근 이동','🌅 아침 6–9시','혼자','좋음','뚜껑 사용이 편했어요','그립감이 편했어요','직접 마시기 불편해서 빨대를 쓰고 싶었어요','빨대로 마시기 편했어요','외부에 결로가 생겼어요','세척하기 어렵지 않았어요','가방에 넣기 불편해요','맛과 향이 좋았어요','딱 좋았어요','지하철에서 빨대로 마심','https://drive.google.com/4'],
+];
+
+let allData = [];
+let activeFilter = 'all';
+let galleryFilter = 'all';
+
+window.onload = () => {
+  if(CFG.SHEET_ID && CFG.API_KEY){
+    document.getElementById('cfg-sheet-id').value = CFG.SHEET_ID;
+    document.getElementById('cfg-api-key').value = CFG.API_KEY;
+    document.getElementById('cfg-sheet-name').value = CFG.SHEET_NAME;
+    loadData();
+  } else {
+    var al=document.getElementById('cfg-alert'); if(al){al.style.display='flex';al.style.alignItems='center';al.style.justifyContent='space-between';}
+    allData = SAMPLE;
+    renderAll();
+  }
+};
+
+function showPage(id, btn){
+  if(id==='setup'){
+    const pw = prompt('관리자 비밀번호를 입력하세요:');
+    if(pw !== '1234'){ alert('비밀번호가 틀렸어요.'); return; }
+  }
+  document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));
+  document.querySelectorAll('.nav-item').forEach(n=>n.classList.remove('active'));
+  document.getElementById('page-'+id).classList.add('active');
+  if(btn) btn.classList.add('active');
+  else document.querySelectorAll('.nav-item')[5].classList.add('active');
+}
+
+async function loadData(){
+  const bar = document.getElementById('loading-bar');
+  bar.style.width = '40%';
+  try{
+    const url = `https://sheets.googleapis.com/v4/spreadsheets/${CFG.SHEET_ID}/values/${encodeURIComponent(CFG.SHEET_NAME)}?key=${CFG.API_KEY}`;
+    const res = await fetch(url);
+    if(!res.ok) throw new Error('API 오류: '+res.status);
+    const json = await res.json();
+    allData = (json.values||[]).slice(1).filter(r=>r.length>1);
+    bar.style.width='100%';
+    setTimeout(()=>bar.style.width='0',400);
+    document.getElementById('cfg-alert').style.display='none';
+    document.getElementById('sync-status').textContent = '업데이트: ' + new Date().toLocaleTimeString('ko-KR');
+    renderAll();
+  }catch(e){
+    bar.style.width='0';
+    alert('불러오기 실패: '+e.message);
+    allData = SAMPLE;
+    renderAll();
+  }
+}
+
+function renderAll(){
+  try { updateStats(); } catch(e) { console.warn('stats',e); }
+  try { renderTable(); } catch(e) { console.warn('table',e); }
+  try { renderAllCharts(); } catch(e) { console.warn('charts',e); }
+  try { renderRespondents(); } catch(e) { console.warn('resp',e); }
+  try { renderGallery(); } catch(e) { console.warn('gallery',e); }
+}
+
+function isTumbler(row){ return false; } // 용기 항목 삭제됨
+
+function updateStats(){
+  const total = allData.length;
+  const people = new Set(allData.map(r=>r[COL.NAME])).size;
+  const tCount = allData.filter(r=>isTumbler(r)).length;
+  const pCount = allData.filter(r=>r[COL.PHOTO] && r[COL.PHOTO].startsWith('http')).length;
+  document.getElementById('ov-total').textContent = total;
+  document.getElementById('ov-people').textContent = people;
+  document.getElementById('ov-tumbler').textContent = total ? Math.round(tCount/total*100)+'%' : '0%';
+  document.getElementById('ov-photo').textContent = total ? Math.round(pCount/total*100)+'%' : '0%';
+}
+
+function getFreq(col, data){
+  const map={};
+  (data||allData).forEach(r=>{
+    const v=(r[col]||'').replace(/[🏠💼☕🚶🚗🚇🏋🏫⛺🌅🌞🍱☀🌆🌙🧊🌡]/g,'').trim();
+    if(!v) return;
+    v.split(',').forEach(s=>{
+      const k=s.trim(); if(k) map[k]=(map[k]||0)+1;
+    });
+  });
+  return Object.entries(map).sort((a,b)=>b[1]-a[1]);
+}
+
+function barChart(items, maxItems=6, color=''){
+  if(!items.length) return '<div class="empty">데이터 없음</div>';
+  const top = items.slice(0,maxItems);
+  const maxV = Math.max(...top.map(i=>i[1]),1);
+  return '<div class="bar-list">'+top.map(([label,val])=>`
+    <div class="bar-row">
+      <div class="bar-label" title="${label}">${label}</div>
+      <div class="bar-track">
+        <div class="bar-fill ${color}" style="width:${Math.round(val/maxV*100)}%">
+          <span class="bar-val">${val}</span>
+        </div>
+      </div>
+    </div>
+  `).join('')+'</div>';
+}
+
+function renderAllCharts(){
+  // Overview charts
+  document.getElementById('ov-chart-usage').innerHTML = barChart(getFreq(COL.DRINK),5);
+  document.getElementById('ov-chart-drinks').innerHTML = barChart(getFreq(COL.DRINK),5);
+  document.getElementById('ov-chart-places').innerHTML = barChart(getFreq(COL.PLACE),6);
+  document.getElementById('ov-chart-times').innerHTML = barChart(getFreq(COL.TIMEOFDAY),6);
+
+  // Full charts
+  const ch = (id,col,n,c='')=>{ const el=document.getElementById(id); if(el) el.innerHTML=barChart(getFreq(col),n,c); };
+  ch('ch-drinks',COL.DRINK,8);
+  ch('ch-places',COL.PLACE,8);
+  ch('ch-times',COL.TIMEOFDAY,6);
+  ch('ch-situations',COL.SITUATION,8);
+  ch('ch-company',COL.COMPANY,5);
+  ch('ch-rating',COL.RATING,5);
+}
+
+function renderTable(){
+  const search = document.getElementById('search-input').value.toLowerCase();
+  let data = allData;
+  if(activeFilter==='tumbler') data=data.filter(r=>isTumbler(r));
+  else if(activeFilter==='no-tumbler') data=data.filter(r=>!isTumbler(r));
+  else if(activeFilter==='photo') data=data.filter(r=>r[COL.PHOTO]&&r[COL.PHOTO].startsWith('http'));
+  if(search) data=data.filter(r=>r.join(' ').toLowerCase().includes(search));
+  const tbody=document.getElementById('res-tbody');
+  if(!data.length){ tbody.innerHTML='<tr><td colspan="11" class="empty">해당하는 응답이 없어요</td></tr>'; return; }
+  tbody.innerHTML=data.map(r=>`
+    <tr>
+      <td style="white-space:nowrap;font-size:12px;color:var(--text-muted);">${r[COL.TIME]||''}</td>
+      <td><b>${r[COL.NAME]||''}</b></td>
+      <td style="max-width:160px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${r[COL.DRINK]||''}</td>
+      <td style="white-space:nowrap;">${r[COL.TEMP]||''}</td>
+      <td>${(r[COL.PLACE]||'').replace(/[\u{1F3E0}\u{1F4BC}\u2615\u{1F6B6}\u{1F697}\u{1F687}\u{1F3CB}\u{1F3EB}\u26FA]/gu,'').trim()}</td>
+      <td class="td-usage" title="${r[COL.SITUATION]||''}">${r[COL.SITUATION]||'-'}</td>
+      <td style="white-space:nowrap;">${(r[COL.TIMEOFDAY]||'').replace(/[\u{1F305}\u{1F31E}\u{1F371}\u2600\u{1F306}\u{1F319}]/gu,'').trim()}</td>
+      <td>${r[COL.COMPANY]||'-'}</td>
+      <td>${r[COL.RATING]||'-'}</td>
+      <td class="td-memo" title="${r[COL.MEMO]||''}">${r[COL.MEMO]||''}</td>
+      <td>${r[COL.PHOTO]&&r[COL.PHOTO].startsWith('http')?`<a href="${r[COL.PHOTO]}" target="_blank"><span class="badge badge-photo">📷 보기</span></a>`:'<span style="color:var(--text-hint);font-size:12px;">없음</span>'}</td>
+    </tr>
+  `).join('');
+}
+
+function filterRes(el,type){
+  document.querySelectorAll('.filter-bar .filter-chip').forEach(c=>c.classList.remove('on'));
+  el.classList.add('on'); activeFilter=type; renderTable();
+}
+
+function renderRespondents(){
+  const map={};
+  allData.forEach(r=>{
+    const n=r[COL.NAME]||'미입력';
+    if(!map[n]) map[n]={count:0,last:''};
+    map[n].count++;
+    map[n].last=r[COL.TIME]||'';
+  });
+  const maxCount=Math.max(...Object.values(map).map(v=>v.count),1);
+  const entries=Object.entries(map).sort((a,b)=>b[1].count-a[1].count);
+  document.getElementById('resp-grid').innerHTML=entries.map(([name,d])=>`
+    <div class="resp-card">
+      <div class="resp-name">${name}</div>
+      <div class="resp-count">${d.count}<span>건</span></div>
+      <div class="resp-last">마지막: ${d.last}</div>
+      <div class="resp-bar"><div class="resp-bar-fill" style="width:${Math.round(d.count/maxCount*100)}%"></div></div>
+    </div>
+  `).join('');
+  document.getElementById('ch-respondents').innerHTML=barChart(entries.map(([n,d])=>[n,d.count]),10);
+}
+
+function renderGallery(){
+  const photos=allData.filter(r=>r[COL.PHOTO]&&r[COL.PHOTO].startsWith('http'));
+  const people=[...new Set(photos.map(r=>r[COL.NAME]))];
+
+  // person filter chips
+  const pf=document.getElementById('gallery-person-filters');
+  if(!pf) return;
+  pf.innerHTML=people.map(p=>`<div class="filter-chip" onclick="filterGallery(this,'${p}')" style="margin-left:8px;">${p}</div>`).join('');
+
+  const filtered = galleryFilter==='all' ? photos : photos.filter(r=>r[COL.NAME]===galleryFilter);
+  const grid=document.getElementById('photo-grid');
+  if(!filtered.length){ grid.innerHTML='<div class="empty">사진이 없어요</div>'; return; }
+  grid.innerHTML=filtered.map((r,i)=>`
+    <div class="photo-item" onclick="openLightbox('${r[COL.PHOTO]}','${r[COL.NAME]} · ${(r[COL.DRINK]||'').split('|')[0].trim()} · ${r[COL.TIME]||''}')">
+      <img class="photo-thumb" src="${r[COL.PHOTO]}" alt="사진" referrerpolicy="no-referrer" crossorigin="anonymous" onerror="this.style.display='none';if(this.nextElementSibling)this.nextElementSibling.style.display='flex';">
+      <div class="photo-thumb-placeholder" style="display:none;">📷 <span style='font-size:12px;'>클릭해서 보기</span></div>
+      <div class="photo-info">
+        <div class="photo-name">${r[COL.NAME]||''}</div>
+        <div class="photo-meta">${(r[COL.DRINK]||'').split('|')[0].trim()} · ${(r[COL.TIME]||'').slice(0,10)}</div>
+      </div>
+    </div>
+  `).join('');
+}
+
+function filterGallery(el,person){
+  document.querySelectorAll('.gallery-filter .filter-chip').forEach(c=>c.classList.remove('on'));
+  el.classList.add('on'); galleryFilter=person; renderGallery();
+}
+
+function openLightbox(src,info){
+  // Google Drive 이미지는 새 탭으로 열기
+  if(src.includes('drive.google.com')){
+    window.open(src,'_blank');
+    return;
+  }
+  document.getElementById('lightbox-img').src=src;
+  document.getElementById('lightbox-info').textContent=info;
+  document.getElementById('lightbox').classList.add('show');
+}
+function closeLightbox(){ document.getElementById('lightbox').classList.remove('show'); }
+
+function exportCSV(){
+  const headers=['시간','이름','음료','온도','용기','사용방식','텀블러모델','미사용이유','장소','상황','시간대','동반','만족도','뚜껑','그립감','입감촉','빨대','보온보냉','세척','휴대','맛향','온도느낌','메모','사진'];
+  const rows=[headers,...allData];
+  const csv=rows.map(r=>r.map(v=>'"'+(v||'').replace(/"/g,'""')+'"').join(',')).join('\n');
+  const blob=new Blob(['\uFEFF'+csv],{type:'text/csv;charset=utf-8'});
+  const url=URL.createObjectURL(blob);
+  const a=document.createElement('a'); a.href=url; a.download='bw_diary_'+Date.now()+'.csv'; a.click();
+  URL.revokeObjectURL(url);
+}
+
+function saveConfig(){
+  CFG.SHEET_ID=document.getElementById('cfg-sheet-id').value.trim();
+  CFG.API_KEY=document.getElementById('cfg-api-key').value.trim();
+  CFG.SHEET_NAME=document.getElementById('cfg-sheet-name').value.trim()||'응답';
+  localStorage.setItem('bw_sheet_id',CFG.SHEET_ID);
+  localStorage.setItem('bw_api_key',CFG.API_KEY);
+  localStorage.setItem('bw_sheet_name',CFG.SHEET_NAME);
+  if(CFG.SHEET_ID&&CFG.API_KEY){
+    loadData();
+    showPage('overview',document.querySelectorAll('.nav-item')[0]);
+  } else {
+    alert('Sheet ID와 API Key를 모두 입력해주세요.');
+  }
+}
+</script>
+</body>
+</html>
