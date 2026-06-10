@@ -1,0 +1,612 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>음료 다이어리</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Nanum+Gothic:wght@400;700;800&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #F7F5F0; --surface: #FFFFFF; --text: #1A1814;
+    --text-muted: #7A7670; --text-hint: #B0ADA8; --border: #E8E5DF;
+    --accent: #2B4C3F; --accent-light: #E8F0ED; --radius: 14px; --radius-sm: 8px;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
+  html, body { height: 100%; background: var(--bg); font-family: 'Nanum Gothic', sans-serif; color: var(--text); }
+  .app { max-width: 480px; margin: 0 auto; min-height: 100vh; display: flex; flex-direction: column; padding: 0 0 120px; }
+
+  .header { padding: 20px 24px 0; display: flex; align-items: center; justify-content: space-between; }
+  .header-logo { font-size: 13px; font-weight: 800; letter-spacing: 0.08em; color: var(--accent); text-transform: uppercase; }
+  .header-right { display: flex; align-items: center; gap: 10px; }
+  .header-id { font-size: 12px; color: var(--text-hint); }
+  .history-btn { font-size: 12px; font-weight: 700; color: var(--accent); background: var(--accent-light); border: none; border-radius: 99px; padding: 5px 12px; cursor: pointer; font-family: 'Nanum Gothic', sans-serif; }
+
+  .progress-wrap { padding: 16px 24px 0; }
+  .progress-bar { height: 3px; background: var(--border); border-radius: 99px; overflow: hidden; }
+  .progress-fill { height: 100%; background: var(--accent); border-radius: 99px; transition: width 0.4s cubic-bezier(0.4,0,0.2,1); }
+  .progress-label { display: flex; justify-content: space-between; margin-top: 8px; font-size: 11px; color: var(--text-hint); }
+
+  .content { flex: 1; padding: 28px 24px 0; }
+  .step { display: none; animation: fadeUp 0.3s ease; }
+  .step.active { display: block; }
+  @keyframes fadeUp { from { opacity:0; transform:translateY(12px); } to { opacity:1; transform:translateY(0); } }
+
+  .step-eyebrow { font-size: 11px; font-weight: 700; letter-spacing: 0.1em; text-transform: uppercase; color: var(--accent); margin-bottom: 8px; }
+  .step-title { font-size: 22px; font-weight: 800; line-height: 1.35; margin-bottom: 6px; }
+  .step-desc { font-size: 14px; color: var(--text-muted); line-height: 1.6; margin-bottom: 28px; }
+
+  .chips { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 16px; }
+  .chip { padding: 9px 16px; border-radius: 99px; border: 1.5px solid var(--border); font-size: 14px; font-family: 'Nanum Gothic', sans-serif; font-weight: 700; cursor: pointer; background: var(--surface); color: var(--text); transition: all 0.15s; user-select: none; }
+  .chip:active { transform: scale(0.96); }
+  .chip.selected { background: var(--accent); color: #fff; border-color: var(--accent); }
+  .chip.pill-sm { padding: 7px 14px; font-size: 13px; }
+
+  .field-group { margin-bottom: 22px; }
+  .field-label { font-size: 12px; font-weight: 700; letter-spacing: 0.06em; text-transform: uppercase; color: var(--text-muted); margin-bottom: 10px; display: block; }
+  input[type="text"], input[type="datetime-local"], textarea { width: 100%; padding: 13px 16px; border: 1.5px solid var(--border); border-radius: var(--radius-sm); font-size: 15px; font-family: 'Nanum Gothic', sans-serif; background: var(--surface); color: var(--text); outline: none; transition: border-color 0.2s; -webkit-appearance: none; }
+  input:focus, textarea:focus { border-color: var(--accent); }
+  textarea { resize: none; line-height: 1.65; }
+
+  .divider { height: 1px; background: var(--border); margin: 20px 0; }
+  .conditional { display: none; }
+  .conditional.show { display: block; }
+
+  .photo-upload-area { border: 2px dashed var(--border); border-radius: var(--radius); padding: 28px 20px; text-align: center; cursor: pointer; background: var(--surface); margin-bottom: 8px; }
+  .upload-icon { font-size: 36px; margin-bottom: 10px; }
+  .upload-text { font-size: 15px; font-weight: 700; margin-bottom: 4px; }
+  .upload-hint { font-size: 12px; color: var(--text-hint); }
+  .photo-required-badge { display: inline-block; background: #FFF0ED; color: #C0452B; font-size: 11px; font-weight: 700; padding: 3px 10px; border-radius: 99px; margin-bottom: 12px; }
+  .photo-preview { position: relative; margin-bottom: 12px; display: none; }
+  .photo-preview img { width: 100%; border-radius: var(--radius); max-height: 240px; object-fit: cover; display: block; }
+  .photo-remove { position: absolute; top: 10px; right: 10px; width: 32px; height: 32px; background: rgba(0,0,0,0.55); border: none; border-radius: 50%; color: white; font-size: 16px; cursor: pointer; display: flex; align-items: center; justify-content: center; }
+  input[type="file"] { display: none; }
+
+  .rating-row { display: flex; gap: 8px; }
+  .rating-btn { flex: 1; padding: 12px 8px; border-radius: var(--radius-sm); border: 1.5px solid var(--border); background: var(--surface); font-size: 13px; font-family: 'Nanum Gothic', sans-serif; font-weight: 700; cursor: pointer; text-align: center; transition: all 0.15s; }
+  .rating-btn.selected { background: var(--accent); color: white; border-color: var(--accent); }
+
+  .summary-card { background: var(--surface); border-radius: var(--radius); border: 1.5px solid var(--border); overflow: hidden; }
+  .summary-row { padding: 14px 18px; border-bottom: 1px solid var(--border); display: flex; flex-direction: column; gap: 4px; }
+  .summary-row:last-child { border-bottom: none; }
+  .summary-key { font-size: 11px; font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase; color: var(--text-hint); }
+  .summary-val { font-size: 14px; font-weight: 700; line-height: 1.5; }
+
+  .notice-box { background: var(--accent-light); border-radius: var(--radius-sm); padding: 12px 14px; font-size: 13px; color: var(--accent); line-height: 1.6; margin-bottom: 16px; }
+
+  /* BOTTOM NAV */
+  .bottom-nav { position: fixed; bottom: 0; left: 0; right: 0; max-width: 480px; margin: 0 auto; padding: 16px 24px 28px; background: var(--bg); border-top: 1px solid var(--border); display: flex; gap: 10px; }
+  .btn-back { flex: 0 0 56px; height: 54px; border-radius: var(--radius-sm); border: 1.5px solid var(--border); background: var(--surface); font-size: 20px; cursor: pointer; display: none; align-items: center; justify-content: center; color: var(--text-muted); }
+  .btn-next { flex: 1; height: 54px; border-radius: var(--radius-sm); border: none; background: var(--accent); color: white; font-size: 16px; font-family: 'Nanum Gothic', sans-serif; font-weight: 800; cursor: pointer; display: flex; align-items: center; justify-content: center; }
+  .btn-next:active { background: #1d3a2e; }
+
+  /* SUCCESS */
+  .success-screen { display: none; flex-direction: column; align-items: center; justify-content: center; min-height: 80vh; text-align: center; padding: 40px 24px; }
+  .success-screen.show { display: flex; animation: fadeUp 0.4s ease; }
+  .success-icon { font-size: 64px; margin-bottom: 20px; }
+  .success-title { font-size: 24px; font-weight: 800; margin-bottom: 12px; }
+  .success-desc { font-size: 15px; color: var(--text-muted); line-height: 1.7; margin-bottom: 32px; }
+  .btn-add-more { width: 100%; padding: 16px; border-radius: var(--radius-sm); border: 1.5px solid var(--accent); background: transparent; color: var(--accent); font-size: 15px; font-family: 'Nanum Gothic', sans-serif; font-weight: 800; cursor: pointer; margin-bottom: 12px; }
+  .btn-history { width: 100%; padding: 14px; border-radius: var(--radius-sm); border: 1.5px solid var(--border); background: transparent; color: var(--text-muted); font-size: 14px; font-family: 'Nanum Gothic', sans-serif; font-weight: 700; cursor: pointer; }
+
+  /* HISTORY */
+  .history-screen { display: none; flex-direction: column; padding: 0 0 40px; position: fixed; inset: 0; background: var(--bg); z-index: 50; overflow-y: auto; max-width: 480px; margin: 0 auto; }
+  .history-screen.show { display: flex; animation: fadeUp 0.3s ease; }
+  .history-header { padding: 20px 24px 16px; display: flex; align-items: center; gap: 12px; border-bottom: 1px solid var(--border); position: sticky; top: 0; background: var(--bg); z-index: 10; }
+  .history-back { background: none; border: none; font-size: 20px; cursor: pointer; color: var(--text-muted); }
+  .history-title { font-size: 16px; font-weight: 800; }
+  .history-count { font-size: 12px; color: var(--text-hint); margin-left: auto; }
+  .history-body { padding: 20px 24px; }
+  .day-group { margin-bottom: 28px; }
+  .day-label { font-size: 12px; font-weight: 800; color: var(--text-hint); letter-spacing: 0.08em; text-transform: uppercase; margin-bottom: 12px; }
+  .record-card { background: var(--surface); border-radius: var(--radius); border: 1px solid var(--border); padding: 16px; margin-bottom: 10px; display: flex; gap: 12px; }
+  .record-photo { width: 64px; height: 64px; border-radius: var(--radius-sm); object-fit: cover; flex-shrink: 0; background: var(--bg); display: flex; align-items: center; justify-content: center; font-size: 24px; overflow: hidden; }
+  .record-photo img { width: 100%; height: 100%; object-fit: cover; }
+  .record-info { flex: 1; min-width: 0; }
+  .record-drink { font-size: 14px; font-weight: 800; margin-bottom: 4px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .record-meta { font-size: 12px; color: var(--text-muted); margin-bottom: 4px; }
+  .record-memo { font-size: 12px; color: var(--text-hint); line-height: 1.6; word-break: keep-all; }
+  .record-tags { display: flex; gap: 4px; flex-wrap: wrap; margin-top: 6px; }
+  .record-tag { font-size: 11px; padding: 2px 8px; border-radius: 99px; background: var(--bg); color: var(--text-muted); }
+  .history-empty { text-align: center; padding: 60px 20px; color: var(--text-hint); font-size: 14px; }
+
+  .loading-overlay { display: none; position: fixed; inset: 0; background: rgba(247,245,240,0.9); z-index: 100; flex-direction: column; align-items: center; justify-content: center; gap: 16px; }
+  .loading-overlay.show { display: flex; }
+  .spinner { width: 36px; height: 36px; border: 3px solid var(--border); border-top-color: var(--accent); border-radius: 50%; animation: spin 0.7s linear infinite; }
+  @keyframes spin { to { transform: rotate(360deg); } }
+
+  .toast { position: fixed; bottom: 100px; left: 50%; transform: translateX(-50%) translateY(20px); background: var(--text); color: white; padding: 10px 20px; border-radius: 99px; font-size: 13px; font-weight: 700; opacity: 0; transition: all 0.3s; pointer-events: none; white-space: nowrap; z-index: 200; }
+  .toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+</style>
+</head>
+<body>
+<div class="app" id="main-app">
+  <div class="header">
+    <span class="header-logo">🥤 음료 다이어리</span>
+    <div class="header-right">
+      <span class="header-id" id="header-pid"></span>
+      <button class="history-btn" id="history-btn" onclick="showHistory()" style="display:none;">📋 내 기록</button>
+    </div>
+  </div>
+
+  <div class="progress-wrap" id="progress-wrap">
+    <div class="progress-bar"><div class="progress-fill" id="progress-fill" style="width:0%"></div></div>
+    <div class="progress-label"><span id="progress-step-label">1 / 5</span><span id="progress-step-name">시작</span></div>
+  </div>
+
+  <div class="content">
+
+    <!-- STEP 0: 시작 -->
+    <div class="step active" id="step-0">
+      <div class="step-eyebrow">시작하기</div>
+      <div class="step-title">안녕하세요 👋<br>음료를 마셨나요?</div>
+      <div class="step-desc">지금 마시고 있거나 방금 마신 음료를 기록해주세요.</div>
+      <div class="field-group">
+        <label class="field-label">이름</label>
+        <input type="text" id="participant-id" placeholder="이름을 입력해주세요" maxlength="20">
+      </div>
+      <div class="field-group">
+        <label class="field-label">날짜 / 시간</label>
+        <input type="datetime-local" id="datetime-input">
+        <div class="notice-box" style="margin-top:10px;">📌 현재 시간이 자동 입력됩니다. 이전에 마신 음료를 기록하는 경우 실제 시간으로 수정해주세요.</div>
+      </div>
+    </div>
+
+    <!-- STEP 1: 음료 -->
+    <div class="step" id="step-1">
+      <div class="step-eyebrow">Step 1 · 음료</div>
+      <div class="step-title">어떤 음료를<br>마셨나요?</div>
+      <div class="step-desc">하나만 선택하고, 음료명도 적어주세요!</div>
+      <div class="field-group">
+        <label class="field-label">음료 종류</label>
+        <div class="chips" id="g-drink">
+          <div class="chip" onclick="toggleSingle(this,'g-drink')">아이스 아메리카노</div>
+          <div class="chip" onclick="toggleSingle(this,'g-drink')">핫 아메리카노</div>
+          <div class="chip" onclick="toggleSingle(this,'g-drink')">라떼류</div>
+          <div class="chip" onclick="toggleSingle(this,'g-drink')">카푸치노/플랫화이트</div>
+          <div class="chip" onclick="toggleSingle(this,'g-drink')">생수</div>
+          <div class="chip" onclick="toggleSingle(this,'g-drink')">탄산수</div>
+          <div class="chip" onclick="toggleSingle(this,'g-drink')">차 / 허브티</div>
+          <div class="chip" onclick="toggleSingle(this,'g-drink')">녹차 / 말차</div>
+          <div class="chip" onclick="toggleSingle(this,'g-drink')">스무디 / 쉐이크</div>
+          <div class="chip" onclick="toggleSingle(this,'g-drink')">에너지드링크</div>
+          <div class="chip" onclick="toggleSingle(this,'g-drink')">프로틴쉐이크</div>
+          <div class="chip" onclick="toggleSingle(this,'g-drink')">주스 / 과일음료</div>
+          <div class="chip" data-other="drink" onclick="toggleSingleOther(this,'g-drink','drink-other-wrap')">기타</div>
+        </div>
+        <div id="drink-other-wrap" style="display:none;">
+          <input type="text" id="drink-other-input" placeholder="음료명을 직접 입력해주세요">
+        </div>
+      </div>
+      <div class="field-group">
+        <label class="field-label">음료명 (구체적으로)</label>
+        <input type="text" id="drink-detail" placeholder="예: 스타벅스 돌체라떼, 이디야 아아 등">
+      </div>
+      <div class="field-group">
+        <label class="field-label">온도</label>
+        <div class="chips" id="g-temp">
+          <div class="chip" onclick="toggleSingle(this,'g-temp')">🧊 차가운</div>
+          <div class="chip" onclick="toggleSingle(this,'g-temp')">🌡 따뜻한</div>
+          <div class="chip" onclick="toggleSingle(this,'g-temp')">상온</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- STEP 2: 상황 -->
+    <div class="step" id="step-2">
+      <div class="step-eyebrow">Step 2 · 상황</div>
+      <div class="step-title">어디서, 어떤<br>상황이었나요?</div>
+      <div class="step-desc">음료를 마실 때의 상황을 알려주세요.</div>
+      <div class="field-group">
+        <label class="field-label">장소</label>
+        <div class="chips" id="g-place">
+          <div class="chip" onclick="toggleSinglePlace(this)">🏠 집</div>
+          <div class="chip" onclick="toggleSinglePlace(this)">💼 사무실</div>
+          <div class="chip" onclick="toggleSinglePlace(this)">☕ 카페</div>
+          <div class="chip" onclick="toggleSinglePlace(this)">🚶 이동 중 (도보)</div>
+          <div class="chip" onclick="toggleSinglePlace(this)">🚗 차 안 (운전)</div>
+          <div class="chip" onclick="toggleSinglePlace(this)">🚇 대중교통</div>
+          <div class="chip" onclick="toggleSinglePlace(this)">🏋 운동 공간</div>
+          <div class="chip" onclick="toggleSinglePlace(this)">🏫 학교</div>
+          <div class="chip" onclick="toggleSinglePlace(this)">⛺ 캠핑</div>
+          <div class="chip" data-other="place" onclick="toggleSinglePlaceOther(this)">기타(직접입력)</div>
+        </div>
+        <div id="place-other-wrap" style="display:none;margin-top:8px;">
+          <input type="text" id="place-other-input" placeholder="장소를 직접 입력해주세요">
+        </div>
+      </div>
+      <div class="field-group">
+        <label class="field-label">하던 일 / 상황 (복수 선택)</label>
+        <div class="chips" id="g-situation">
+          <div class="chip pill-sm" onclick="toggle(this,'g-situation')">업무 / 공부</div>
+          <div class="chip pill-sm" onclick="toggle(this,'g-situation')">출퇴근 이동</div>
+          <div class="chip pill-sm" onclick="toggle(this,'g-situation')">운동 전·중·후</div>
+          <div class="chip pill-sm" onclick="toggle(this,'g-situation')">식사 중</div>
+          <div class="chip pill-sm" onclick="toggle(this,'g-situation')">휴식·카페타임</div>
+          <div class="chip pill-sm" onclick="toggle(this,'g-situation')">약속·외출</div>
+          <div class="chip pill-sm" onclick="toggle(this,'g-situation')">드라이브</div>
+          <div class="chip pill-sm" onclick="toggle(this,'g-situation')">미팅·회의</div>
+          <div class="chip pill-sm" data-other="sit" onclick="toggleOther(this,'g-situation','sit-other-wrap')">기타(직접입력)</div>
+        </div>
+        <div id="sit-other-wrap" style="display:none;margin-top:8px;">
+          <input type="text" id="sit-other-input" placeholder="음용 상황을 직접 입력해주세요">
+        </div>
+      </div>
+      <div class="field-group">
+        <label class="field-label">시간대</label>
+        <div class="chips" id="g-time">
+          <div class="chip pill-sm" onclick="toggleSingle(this,'g-time')">🌅 아침 6–9시</div>
+          <div class="chip pill-sm" onclick="toggleSingle(this,'g-time')">🌞 오전 9–12시</div>
+          <div class="chip pill-sm" onclick="toggleSingle(this,'g-time')">🍱 점심 12–14시</div>
+          <div class="chip pill-sm" onclick="toggleSingle(this,'g-time')">☀ 오후 14–18시</div>
+          <div class="chip pill-sm" onclick="toggleSingle(this,'g-time')">🌆 저녁 18–22시</div>
+          <div class="chip pill-sm" onclick="toggleSingle(this,'g-time')">🌙 밤 22시–</div>
+        </div>
+      </div>
+      <div class="field-group">
+        <label class="field-label">혼자 or 같이?</label>
+        <div class="chips" id="g-company">
+          <div class="chip pill-sm" onclick="toggleSingle(this,'g-company')">혼자</div>
+          <div class="chip pill-sm" onclick="toggleSingle(this,'g-company')">동료 / 친구와</div>
+          <div class="chip pill-sm" onclick="toggleSingle(this,'g-company')">가족과</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- STEP 3: 사진 + 메모 -->
+    <div class="step" id="step-3">
+      <div class="step-eyebrow">Step 3 · 기록</div>
+      <div class="step-title">사진과 메모를<br>남겨주세요</div>
+      <div class="step-desc">음용 당시의 느낌, 불편함, 특이한 점을 자유롭게 적어주세요.</div>
+
+      <span class="photo-required-badge">📸 사진 필수</span>
+      <div class="photo-upload-area" id="upload-btn" onclick="document.getElementById('file-input').click()">
+        <div class="upload-icon">📷</div>
+        <div class="upload-text">음료 · 텀블러 사진 찍기</div>
+        <div class="upload-hint">탭하면 카메라 or 갤러리가 열려요</div>
+      </div>
+      <div class="photo-preview" id="photo-preview">
+        <img id="preview-img" src="" alt="첨부 사진">
+        <button class="photo-remove" onclick="removePhoto()">✕</button>
+      </div>
+      <input type="file" id="file-input" accept="image/*" onchange="handlePhoto(event)">
+
+      <div class="field-group" style="margin-top:16px;">
+        <label class="field-label">자유 메모</label>
+        <div class="notice-box" style="margin-bottom:10px;">📝 Daily 기록을 위해 기억해야할 사항들, 음료를 드시면서 느끼셨던 점들을 기록해주세요</div>
+        <textarea id="memo" rows="5" placeholder="예: 아이스 아메리카노는 텀블러에 담으면 결로가 생겨서 가방 안이 젖어요 / 운전 중에 뚜껑 열기가 너무 불편했어요..."></textarea>
+      </div>
+
+      <div class="field-group">
+        <label class="field-label">만족도</label>
+        <div class="rating-row" id="g-rating">
+          <button class="rating-btn" onclick="selectRating(this,1)">😞 별로</button>
+          <button class="rating-btn" onclick="selectRating(this,2)">😐 보통</button>
+          <button class="rating-btn" onclick="selectRating(this,3)">😊 좋음</button>
+          <button class="rating-btn" onclick="selectRating(this,4)">🤩 최고</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- STEP 4: 확인 -->
+    <div class="step" id="step-4">
+      <div class="step-eyebrow">마지막 확인</div>
+      <div class="step-title">이렇게 기록할까요?</div>
+      <div class="step-desc">내용을 확인하고 제출해주세요.</div>
+      <div class="summary-card" id="summary-card"></div>
+    </div>
+
+  </div>
+
+  <!-- SUCCESS -->
+  <div class="success-screen" id="success-screen">
+    <div class="success-icon">✅</div>
+    <div class="success-title">기록 완료!</div>
+    <div class="success-desc">소중한 기록 감사해요.<br>음료를 마실 때마다 기록해주시면<br>더 정확한 결과를 얻을 수 있어요.</div>
+    <button class="btn-add-more" onclick="resetForm()">+ 새 음료 기록 추가하기</button>
+    <button class="btn-history" onclick="showHistory()">📋 내 기록 보기</button>
+  </div>
+
+</div>
+
+<!-- HISTORY (main-app 밖으로) -->
+<div class="history-screen" id="history-screen" style="max-width:480px;margin:0 auto;">
+  <div class="history-header">
+    <button class="history-back" onclick="hideHistory()">←</button>
+    <div class="history-title" id="history-title">내 기록</div>
+    <div class="history-count" id="history-count"></div>
+  </div>
+  <div class="history-body" id="history-body"></div>
+</div>
+
+<div class="bottom-nav" id="bottom-nav">
+  <button class="btn-back" id="btn-back" onclick="prevStep()">←</button>
+  <button class="btn-next" id="btn-next" onclick="nextStep()">다음 →</button>
+</div>
+
+<div class="loading-overlay" id="loading">
+  <div class="spinner"></div>
+</div>
+<div class="toast" id="toast"></div>
+
+<script>
+const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbyZ9RXL6ZeiB1D49-izPy5WNwC2XUjYEJfmBgqLnYUx_sWIdhlgZwlgCXY9FBAQEHmc/exec';
+const SHEET_ID = '1PH2fQqHsWNzzTG7I2D5qDls2906w4Oukf9Hayh3DCZk';
+const API_KEY = 'AIzaSyDJK9bqrGUxpHRWQU7imTPN7eXxzucXKCA';
+const SHEET_NAME = '응답';
+
+let currentStep = 0;
+const totalSteps = 5;
+let photoBase64 = null;
+let selectedRating = null;
+const stepNames = ['시작','음료 종류','상황·장소','사진·메모','최종 확인'];
+
+window.onload = () => {
+  const now = new Date();
+  now.setMinutes(now.getMinutes() - now.getTimezoneOffset());
+  document.getElementById('datetime-input').value = now.toISOString().slice(0,16);
+  updateNav();
+};
+
+function updateNav(){
+  const pct = (currentStep/(totalSteps-1))*100;
+  document.getElementById('progress-fill').style.width = pct+'%';
+  document.getElementById('progress-step-label').textContent = (currentStep+1)+' / '+totalSteps;
+  document.getElementById('progress-step-name').textContent = stepNames[currentStep];
+  document.getElementById('btn-back').style.display = currentStep>0 ? 'flex' : 'none';
+  document.getElementById('btn-next').textContent = currentStep===totalSteps-1 ? '제출하기 ✓' : '다음 →';
+  const pid = document.getElementById('participant-id').value;
+  if(pid){
+    document.getElementById('header-pid').textContent = pid;
+    document.getElementById('history-btn').style.display = 'block';
+  }
+}
+
+function toggleSingle(el, group){
+  document.querySelectorAll('#'+group+' .chip').forEach(c=>c.classList.remove('selected'));
+  el.classList.add('selected');
+}
+function toggle(el, group){ el.classList.toggle('selected'); }
+function toggleSingleOther(el, group, wrapId){
+  document.querySelectorAll('#'+group+' .chip').forEach(c=>c.classList.remove('selected'));
+  el.classList.add('selected');
+  document.getElementById(wrapId).style.display='block';
+}
+function toggleOther(el, group, wrapId){
+  el.classList.toggle('selected');
+  document.getElementById(wrapId).style.display = el.classList.contains('selected') ? 'block' : 'none';
+}
+function toggleSinglePlace(el){
+  document.querySelectorAll('#g-place .chip').forEach(c=>c.classList.remove('selected'));
+  el.classList.add('selected');
+  document.getElementById('place-other-wrap').style.display='none';
+}
+function toggleSinglePlaceOther(el){
+  document.querySelectorAll('#g-place .chip').forEach(c=>c.classList.remove('selected'));
+  el.classList.add('selected');
+  document.getElementById('place-other-wrap').style.display='block';
+}
+function selectRating(el,val){
+  document.querySelectorAll('.rating-btn').forEach(b=>b.classList.remove('selected'));
+  el.classList.add('selected'); selectedRating=val;
+}
+
+function getChips(group){
+  return [...document.querySelectorAll('#'+group+' .chip.selected')].map(c=>c.textContent).join(', ');
+}
+function getDrink(){
+  const chip=document.querySelector('#g-drink .chip.selected');
+  if(!chip) return document.getElementById('drink-other-input').value.trim();
+  if(chip.dataset.other==='drink') return document.getElementById('drink-other-input').value.trim()||'기타';
+  return chip.textContent;
+}
+function getPlace(){
+  const chip=document.querySelector('#g-place .chip.selected');
+  if(!chip) return '';
+  if(chip.dataset.other==='place') return document.getElementById('place-other-input').value.trim()||'기타';
+  return chip.textContent;
+}
+function getSituation(){
+  return [...document.querySelectorAll('#g-situation .chip.selected')].map(c=>{
+    if(c.dataset.other==='sit') return document.getElementById('sit-other-input').value.trim()||'기타';
+    return c.textContent;
+  }).join(', ');
+}
+
+function nextStep(){
+  if(currentStep===0 && !document.getElementById('participant-id').value.trim()){ showToast('이름을 입력해주세요'); return; }
+  if(currentStep===1 && !getDrink()){ showToast('음료를 선택하거나 입력해주세요'); return; }
+  if(currentStep===2 && !getPlace()){ showToast('장소를 선택하거나 입력해주세요'); return; }
+  if(currentStep===3 && !photoBase64){ showToast('사진을 첨부해주세요 📸'); return; }
+  if(currentStep===totalSteps-2) buildSummary();
+  if(currentStep===totalSteps-1){ submitData(); return; }
+  goToStep(currentStep+1);
+}
+function prevStep(){ if(currentStep>0) goToStep(currentStep-1); }
+function goToStep(n){
+  document.getElementById('step-'+currentStep).classList.remove('active');
+  currentStep=n;
+  document.getElementById('step-'+currentStep).classList.add('active');
+  updateNav();
+  window.scrollTo({top:0,behavior:'smooth'});
+}
+
+function buildSummary(){
+  const dtVal=document.getElementById('datetime-input').value;
+  const rows=[
+    {k:'이름', v:document.getElementById('participant-id').value},
+    {k:'날짜/시간', v:dtVal?new Date(dtVal).toLocaleString('ko-KR'):'-'},
+    {k:'음료', v:getDrink()+(document.getElementById('drink-detail').value?' · '+document.getElementById('drink-detail').value:'')},
+    {k:'온도', v:getChips('g-temp')||'-'},
+    {k:'장소', v:getPlace()},
+    {k:'상황', v:getSituation()||'-'},
+    {k:'시간대', v:getChips('g-time')||'-'},
+    {k:'동반', v:getChips('g-company')||'-'},
+    {k:'만족도', v:['','😞 별로','😐 보통','😊 좋음','🤩 최고'][selectedRating||0]||'-'},
+    {k:'메모', v:document.getElementById('memo').value||'-'},
+    {k:'사진', v:photoBase64?'📷 첨부됨':'없음'},
+  ];
+  document.getElementById('summary-card').innerHTML=rows.map(r=>`
+    <div class="summary-row"><span class="summary-key">${r.k}</span><span class="summary-val">${r.v}</span></div>
+  `).join('');
+}
+
+async function submitData(){
+  const dtVal=document.getElementById('datetime-input').value;
+  const row=[
+    dtVal?new Date(dtVal).toLocaleString('ko-KR'):new Date().toLocaleString('ko-KR'),
+    document.getElementById('participant-id').value,
+    getDrink()+(document.getElementById('drink-detail').value?' | '+document.getElementById('drink-detail').value:''),
+    getChips('g-temp'),
+    getPlace(),
+    getSituation(),
+    getChips('g-time'),
+    getChips('g-company'),
+    ['','별로','보통','좋음','최고'][selectedRating||0]||'',
+    document.getElementById('memo').value,
+    photoBase64?'[사진첨부]':'',
+  ];
+
+  document.getElementById('loading').classList.add('show');
+  try{
+    await fetch(SCRIPT_URL,{method:'POST',mode:'no-cors',headers:{'Content-Type':'application/json'},body:JSON.stringify({values:row,photo:photoBase64||null})});
+    showSuccess();
+  }catch(e){
+    showToast('저장 실패: '+e.message);
+  }finally{
+    document.getElementById('loading').classList.remove('show');
+  }
+}
+
+// 로컬 저장 제거 - Sheets에서 직접 불러옴
+
+async function showHistory(){
+  const name = document.getElementById('participant-id').value || document.getElementById('header-pid').textContent;
+  if(!name){ showToast('이름을 먼저 입력해주세요'); return; }
+
+  document.getElementById('main-app').style.display='none';
+  document.getElementById('bottom-nav').style.display='none';
+  document.getElementById('history-screen').classList.add('show');
+  document.getElementById('history-title').textContent = name+'의 기록';
+  document.getElementById('history-count').textContent = '';
+  document.getElementById('history-body').innerHTML='<div class="history-empty">불러오는 중...</div>';
+
+  try {
+    const url = `https://sheets.googleapis.com/v4/spreadsheets/${SHEET_ID}/values/${SHEET_NAME}?key=${API_KEY}`;
+    const res = await fetch(url);
+    const json = await res.json();
+    const rows = (json.values||[]).slice(1).filter(r=>r[1]===name);
+
+    document.getElementById('history-count').textContent = rows.length+'건';
+    const body = document.getElementById('history-body');
+
+    if(!rows.length){
+      body.innerHTML='<div class="history-empty">아직 기록이 없어요 😊</div>';
+      return;
+    }
+
+    // 날짜별 그룹 (최신순)
+    // 시간 형식: "2026. 6. 9. 오후 5:08:00"
+    const groups = {};
+    [...rows].reverse().forEach(r=>{
+      const raw = (r[0]||'');
+      // 연. 월. 일. 형식에서 날짜 추출
+      const match = raw.match(/(\d{4})\. (\d{1,2})\. (\d{1,2})\./);
+      const key = match ? match[1]+'.'+match[2].padStart(2,'0')+'.'+match[3].padStart(2,'0') : raw.slice(0,10);
+      if(!groups[key]) groups[key]=[];
+      groups[key].push(r);
+    });
+
+    body.innerHTML = Object.entries(groups).map(([date,recs])=>`
+      <div class="day-group">
+        <div class="day-label">${date}</div>
+        ${recs.map(r=>`
+          <div class="record-card">
+            <div class="record-photo">🥤</div>
+            <div class="record-info">
+              <div class="record-drink">${(r[2]||'음료').split('|')[0].trim()}</div>
+              <div class="record-meta">${r[0]||''}</div>
+              <div class="record-meta">${r[4]||''} · ${r[6]||''} · ${r[8]||''}</div>
+              ${r[9]?`<div class="record-memo">${r[9]}</div>`:''}
+              <div class="record-tags">
+                ${r[3]?`<span class="record-tag">${r[3]}</span>`:''}
+                ${r[5]?`<span class="record-tag">${r[5]}</span>`:''}
+                ${r[10]?`<span class="record-tag">📷 사진있음</span>`:''}
+              </div>
+            </div>
+          </div>
+        `).join('')}
+      </div>
+    `).join('');
+  } catch(e) {
+    document.getElementById('history-body').innerHTML='<div class="history-empty">불러오기 실패: '+e.message+'</div>';
+  }
+
+  document.getElementById('main-app').style.display='none';
+  document.getElementById('bottom-nav').style.display='none';
+  document.getElementById('history-screen').classList.add('show');
+}
+
+function hideHistory(){
+  document.getElementById('history-screen').classList.remove('show');
+  document.getElementById('main-app').style.display='';
+  const isSuccess = document.getElementById('success-screen').classList.contains('show');
+  if(!isSuccess) document.getElementById('bottom-nav').style.display='';
+}
+
+function showSuccess(){
+  document.getElementById('main-app').querySelectorAll('.step').forEach(s=>s.classList.remove('active'));
+  document.getElementById('progress-wrap').style.display='none';
+  document.getElementById('bottom-nav').style.display='none';
+  document.getElementById('success-screen').classList.add('show');
+}
+
+function resetForm(){
+  document.querySelectorAll('.chip').forEach(c=>c.classList.remove('selected'));
+  document.querySelectorAll('.rating-btn').forEach(b=>b.classList.remove('selected'));
+  ['drink-detail','drink-other-input','memo','place-other-input','sit-other-input'].forEach(id=>{
+    const el=document.getElementById(id); if(el) el.value='';
+  });
+  ['drink-other-wrap','place-other-wrap','sit-other-wrap'].forEach(id=>{
+    const el=document.getElementById(id); if(el) el.style.display='none';
+  });
+  photoBase64=null; selectedRating=null;
+  removePhoto();
+  document.getElementById('success-screen').classList.remove('show');
+  document.getElementById('progress-wrap').style.display='';
+  document.getElementById('bottom-nav').style.display='';
+  const now=new Date();
+  now.setMinutes(now.getMinutes()-now.getTimezoneOffset());
+  document.getElementById('datetime-input').value=now.toISOString().slice(0,16);
+  currentStep=0;
+  document.getElementById('step-0').classList.add('active');
+  updateNav();
+  window.scrollTo({top:0});
+}
+
+function handlePhoto(e){
+  const file=e.target.files[0]; if(!file) return;
+  const reader=new FileReader();
+  reader.onload=ev=>{
+    photoBase64=ev.target.result;
+    document.getElementById('preview-img').src=photoBase64;
+    document.getElementById('upload-btn').style.display='none';
+    document.getElementById('photo-preview').style.display='block';
+  };
+  reader.readAsDataURL(file);
+}
+function removePhoto(){
+  photoBase64=null;
+  document.getElementById('preview-img').src='';
+  document.getElementById('upload-btn').style.display='block';
+  document.getElementById('photo-preview').style.display='none';
+  document.getElementById('file-input').value='';
+}
+function showToast(msg){
+  const t=document.getElementById('toast');
+  t.textContent=msg; t.classList.add('show');
+  setTimeout(()=>t.classList.remove('show'),2500);
+}
+</script>
+</body>
+</html>
